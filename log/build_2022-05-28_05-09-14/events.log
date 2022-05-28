@@ -1,0 +1,3 @@
+[0.000000] (-) TimerEvent: {}
+[0.000162] (-) JobUnselected: {'identifier': 'carl-ros2foxy-baseline'}
+[0.000344] (-) EventReactorShutdown: {}
