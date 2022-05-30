@@ -7,6 +7,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "carl-ros2foxy-baseline/msg/ardu_a.hpp"
 
 #include <fcntl.h>
 #include <errno.h>
@@ -14,20 +15,27 @@
 #include <unistd.h>
 
 using namespace std::chrono_literals;
+using std::placeholders::_1;
 
 class ArduinoCommunicator : public rclcpp::Node {
     public:
         ArduinoCommunicator() : Node("arduino_comm") {
-            publisher_ = this->create_publisher<std_msgs::msg::String>("battery_voltages", 10);
-            timer_ = this->create_wall_timer(5s, std::bind(&ArduinoCommunicator::timer_callback, this));
+            battery_publisher_ = this->create_publisher<std_msgs::msg::String>("battery_voltages", 10);
+            
+	    battery_timer_ = this->create_wall_timer(30s, std::bind(&ArduinoCommunicator::battery_timer_callback, this));
+	    
+	    rpm_command_subscription_ = this->create_subscription<carl-ros2foxy-baseline::msg::Ardu_a>("rpm_comms", 10, std::bind(&ArduinoCommunicator::rpm_comm_callback, this, _1));
+	    
 	    this->arduino = open("/dev/ttyACM0", O_RDWR);
 	    if (serial_port < 0) {
 		    RCLCPP_INFO(this->get_logger(), "Unable to open /dev/ttyACM0.");
 	    }
+
 	    struct termios arduino_term;
 	    if(tcgetattr(arduino, &arduino_term) != 0) {
 		    printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
 	    }
+	    
 	    arduino_term.c_cflag &= ~PARENB;
 	    arduino_term.c_cflag &= ~CSTOPB;
 	    arduino_term.c_cflag &= ~CSIZE;
@@ -55,25 +63,30 @@ class ArduinoCommunicator : public rclcpp::Node {
     private:
 	int arduino {0}; // file handle for serial device
 
-        void timer_callback() {
+        void battery_timer_callback() {
             unsigned char msg[] = {'C'};
 	    char read_buf [256];
 
 	    write(this->arduino, msg, sizeof(msg));
 	    int n = read(this->arduino, &read_buf, sizeof(read_buf));
 	    std::string voltages = "";
-	    for (int i = 0; i < n; i++) {
+	    for (int i = 0; i < (n-1); i++) {
 		    voltages = voltages + read_buf[i];
 	    }
 
 	    auto message = std_msgs::msg::String();
 	    message.data = voltages;
             RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
-            publisher_->publish(message);
+            battery_publisher_->publish(message);
         }
 
-    	rclcpp::TimerBase::SharedPtr timer_;
-    	rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+	void rpm_comm_callback(const carl-ros2foxy-baseline::msg::Ardu_a::SharedPtr msg) const {
+		RCLCPP_INFO(this->get_logger(), "ArduinoCommunicator received rpm command: %d %d %d %d", msg->left_rpm, msg->right_rpm, msg->left_ticks, msg_right_ticks);
+	}
+
+    	rclcpp::TimerBase::SharedPtr battery_timer_;
+    	rclcpp::Publisher<std_msgs::msg::String>::SharedPtr battery_publisher_;
+	rclcpp::Subscription<carl-ros2foxy-baseline::msg::Ardu_a>::SharedPtr rpm_command_subscription_;
 	int serial_port;
 };
 
