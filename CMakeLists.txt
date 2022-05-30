@@ -28,12 +28,16 @@ find_package(rosidl_default_generators REQUIRED)
 add_executable(arduino_comm src/arduino_comm.cpp)
 ament_target_dependencies(arduino_comm rclcpp std_msgs)
 
+add_executable(motor_controller src/motor_controller.cpp)
+ament_target_dependencies(motor_controller rclcpp std_msgs)
+
 rosidl_generate_interfaces(${PROJECT_NAME}
-	"msg/Ardu_a.msg"
+	"msg/Ardua.msg"
 	)
 
 install(TARGETS 
   arduino_comm
+  motor_controller
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

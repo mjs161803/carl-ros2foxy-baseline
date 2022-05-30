@@ -6,7 +6,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "carl-ros2foxy-baseline/msg/ardu_a.hpp"
+#include "carl-ros2foxy-baseline/msg/ardua.hpp"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -14,7 +14,7 @@ using std::placeholders::_1;
 class MotorController : public rclcpp::Node {
 	public:
 		MotorController() : Node("motor_controller") {
-			motor_command_publisher_ = this->create_publisher<carl-ros2foxy-baseline::msg::Ardu_a>("motor_commands", 10);
+			motor_command_publisher_ = this->create_publisher<carl-ros2foxy-baseline::msg::Ardua>("motor_commands", 10);
 			motor_command_timer_ = this->create_wall_timer(10s, std::bind(&MotorController::motor_command_callback, this));
 		
 		}
@@ -25,7 +25,7 @@ class MotorController : public rclcpp::Node {
 			unsigned int num_l_ticks {747};
 			unsigned int num_r_ticks {747};
 
-			auto message = carl-ros2foxy-baseline::msg::Ardu_a();
+			auto message = carl-ros2foxy-baseline::msg::Ardua();
 			message.left_rpm = l_rpm;
 			message.right_rpm = r_rpm;
 			message.left_ticks = num_l_ticks;
@@ -36,7 +36,7 @@ class MotorController : public rclcpp::Node {
 		}
 
 		rclcpp::TimerBase::SharedPtr motor_command_timer_;
-		rclcpp::Publisher<carl-ros2foxy-baseline::msg::Ardu_a>::SharedPtr motor_command_publisher_;
+		rclcpp::Publisher<carl-ros2foxy-baseline::msg::Ardua>::SharedPtr motor_command_publisher_;
 }
 
 int main(int argc, char* argv[]) {
