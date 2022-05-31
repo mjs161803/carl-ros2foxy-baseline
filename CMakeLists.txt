@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(carl-ros2foxy-baseline)
+project(carl_ros2foxy_baseline)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -19,21 +19,18 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
+find_package(carl_interfaces REQUIRED)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
 add_executable(arduino_comm src/arduino_comm.cpp)
-ament_target_dependencies(arduino_comm rclcpp std_msgs)
+ament_target_dependencies(arduino_comm rclcpp std_msgs carl_interfaces)
 
 add_executable(motor_controller src/motor_controller.cpp)
-ament_target_dependencies(motor_controller rclcpp std_msgs)
+ament_target_dependencies(motor_controller rclcpp std_msgs carl_interfaces)
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-	"msg/Ardua.msg"
-	)
 
 install(TARGETS 
   arduino_comm

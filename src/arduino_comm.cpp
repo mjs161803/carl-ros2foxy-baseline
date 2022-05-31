@@ -7,7 +7,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "carl-ros2foxy-baseline/msg/ardua.hpp"
+#include "carl_interfaces/msg/arduino_command_a.hpp"
 
 #include <fcntl.h>
 #include <errno.h>
@@ -24,7 +24,7 @@ class ArduinoCommunicator : public rclcpp::Node {
             
 	    battery_timer_ = this->create_wall_timer(30s, std::bind(&ArduinoCommunicator::battery_timer_callback, this));
 	    
-	    rpm_command_subscription_ = this->create_subscription<carl-ros2foxy-baseline::msg::Ardua>("rpm_comms", 10, std::bind(&ArduinoCommunicator::rpm_comm_callback, this, _1));
+	    rpm_command_subscription_ = this->create_subscription<carl_interfaces::msg::ArduinoCommandA>("rpm_comms", 10, std::bind(&ArduinoCommunicator::rpm_comm_callback, this, _1));
 	    
 	    this->arduino = open("/dev/ttyACM0", O_RDWR);
 	    if (serial_port < 0) {
@@ -80,13 +80,13 @@ class ArduinoCommunicator : public rclcpp::Node {
             battery_publisher_->publish(message);
         }
 
-	void rpm_comm_callback(const carl-ros2foxy-baseline::msg::Ardua::SharedPtr msg) const {
-		RCLCPP_INFO(this->get_logger(), "ArduinoCommunicator received rpm command: %d %d %d %d", msg->left_rpm, msg->right_rpm, msg->left_ticks, msg_right_ticks);
+	void rpm_comm_callback(const carl_interfaces::msg::ArduinoCommandA::SharedPtr msg) const {
+		RCLCPP_INFO(this->get_logger(), "ArduinoCommunicator received rpm command: %d %d %d %d", msg->left_rpm, msg->right_rpm, msg->left_ticks, msg->right_ticks);
 	}
 
     	rclcpp::TimerBase::SharedPtr battery_timer_;
     	rclcpp::Publisher<std_msgs::msg::String>::SharedPtr battery_publisher_;
-	rclcpp::Subscription<carl-ros2foxy-baseline::msg::Ardua>::SharedPtr rpm_command_subscription_;
+	rclcpp::Subscription<carl_interfaces::msg::ArduinoCommandA>::SharedPtr rpm_command_subscription_;
 	int serial_port;
 };
 
