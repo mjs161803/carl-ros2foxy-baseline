@@ -22,9 +22,9 @@ class ArduinoCommunicator : public rclcpp::Node {
         ArduinoCommunicator() : Node("arduino_comm") {
             battery_publisher_ = this->create_publisher<std_msgs::msg::String>("battery_voltages", 10);
             
-	    battery_timer_ = this->create_wall_timer(30s, std::bind(&ArduinoCommunicator::battery_timer_callback, this));
+	    battery_timer_ = this->create_wall_timer(10s, std::bind(&ArduinoCommunicator::battery_timer_callback, this));
 	    
-	    rpm_command_subscription_ = this->create_subscription<carl_interfaces::msg::ArduinoCommandA>("rpm_comms", 10, std::bind(&ArduinoCommunicator::rpm_comm_callback, this, _1));
+	    rpm_command_subscription_ = this->create_subscription<carl_interfaces::msg::ArduinoCommandA>("motor_commands", 10, std::bind(&ArduinoCommunicator::rpm_comm_callback, this, _1));
 	    
 	    this->arduino = open("/dev/ttyACM0", O_RDWR);
 	    if (serial_port < 0) {
