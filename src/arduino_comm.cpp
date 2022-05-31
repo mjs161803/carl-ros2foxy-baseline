@@ -81,7 +81,30 @@ class ArduinoCommunicator : public rclcpp::Node {
         }
 
 	void rpm_comm_callback(const carl_interfaces::msg::ArduinoCommandA::SharedPtr msg) const {
+		unsigned char read_buf[256];
+		
 		RCLCPP_INFO(this->get_logger(), "ArduinoCommunicator received rpm command: %d %d %d %d", msg->left_rpm, msg->right_rpm, msg->left_ticks, msg->right_ticks);
+		struct {
+			char header = 0x41;
+			short int lrpm = msg->left_rpm;
+			short int rrpm = msg->right_rpm;
+			unsigned long lticks = msg->left_ticks;
+			unsigned long rticks = msg->right_ticks;
+		} ard_cmd_a;
+
+		RCLCPP_INFO(this->get_logger(), "Size of command to Arduino: %d", sizeof(ard_cmd_a));
+		
+		//auto *msg_ptr = &ard_cmd_a;
+
+		//write(this->arduino, msg_ptr, sizeof(ard_cmd_a));
+		//int n = read(this->arduino, &read_buf, sizeof(read_buf));
+
+	    	//std::string ard_response = "Arduino Response: ";
+	    	//for (int i = 0; i < (n-1); i++) {
+		//	ard_response = ard_response + read_buf[i];
+	    	//}
+
+		//std::cout << ard_response << std::endl;
 	}
 
     	rclcpp::TimerBase::SharedPtr battery_timer_;
