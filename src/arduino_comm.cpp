@@ -82,29 +82,60 @@ class ArduinoCommunicator : public rclcpp::Node {
 
 	void rpm_comm_callback(const carl_interfaces::msg::ArduinoCommandA::SharedPtr msg) const {
 		unsigned char read_buf[256];
-		
-		RCLCPP_INFO(this->get_logger(), "ArduinoCommunicator received rpm command: %d %d %d %d", msg->left_rpm, msg->right_rpm, msg->left_ticks, msg->right_ticks);
-		struct {
-			char header = 0x41;
-			short int lrpm = msg->left_rpm;
-			short int rrpm = msg->right_rpm;
-			unsigned long lticks = msg->left_ticks;
-			unsigned long rticks = msg->right_ticks;
+		unsigned char ard_cmd_a_buff[13];
+
+		short int local_lrpm = msg->left_rpm;
+		short int local_rrpm = msg->right_rpm;
+		unsigned long local_left_ticks = msg->left_ticks;
+		unsigned long local_right_ticks = msg->right_ticks;
+
+		struct cmd_struct {
+			unsigned char header;
+			short int lrpm;
+			short int rrpm;
+			unsigned int lticks;
+			unsigned int rticks;
 		} ard_cmd_a;
-
-		RCLCPP_INFO(this->get_logger(), "Size of command to Arduino: %d", sizeof(ard_cmd_a));
 		
-		//auto *msg_ptr = &ard_cmd_a;
+		ard_cmd_a.header = 0x41;
+		ard_cmd_a.lrpm = local_lrpm;
+		ard_cmd_a.rrpm = local_rrpm;
+		ard_cmd_a.lticks = local_left_ticks;
+		ard_cmd_a.rticks = local_right_ticks;
 
-		//write(this->arduino, msg_ptr, sizeof(ard_cmd_a));
-		//int n = read(this->arduino, &read_buf, sizeof(read_buf));
+		memcpy((ard_cmd_a_buff+0), (char *)&ard_cmd_a.header, 1);
+		memcpy((ard_cmd_a_buff+1), (char *)&ard_cmd_a.lrpm, 2);
+		memcpy((ard_cmd_a_buff+3), (char *)&ard_cmd_a.rrpm, 2);
+		memcpy((ard_cmd_a_buff+5), (char *)&ard_cmd_a.lticks, 4);
+		memcpy((ard_cmd_a_buff+9), (char *)&ard_cmd_a.rticks, 4);
 
-	    	//std::string ard_response = "Arduino Response: ";
-	    	//for (int i = 0; i < (n-1); i++) {
-		//	ard_response = ard_response + read_buf[i];
-	    	//}
+		RCLCPP_INFO(this->get_logger(), "ArduinoCommunicator received rpm command: %d %d %d %d", local_lrpm, local_rrpm, local_left_ticks, local_right_ticks);
 
-		//std::cout << ard_response << std::endl;
+		RCLCPP_INFO(this->get_logger(), "ard_cmd_a_buff contents: %X %X %X %X %X %X %X %X %X %X %X %X %X", 
+				ard_cmd_a_buff[0], 
+				ard_cmd_a_buff[1], 
+				ard_cmd_a_buff[2], 
+				ard_cmd_a_buff[3], 
+				ard_cmd_a_buff[4], 
+				ard_cmd_a_buff[5], 
+				ard_cmd_a_buff[6], 
+				ard_cmd_a_buff[7], 
+				ard_cmd_a_buff[8], 
+				ard_cmd_a_buff[9], 
+				ard_cmd_a_buff[10], 
+				ard_cmd_a_buff[11], 
+				ard_cmd_a_buff[12]); 
+				
+
+		write(this->arduino, ard_cmd_a_buff, sizeof(ard_cmd_a_buff));
+		int n = read(this->arduino, &read_buf, sizeof(read_buf));
+
+	    	std::string ard_response = "Arduino Response: ";
+	    	for (int i = 0; i < (n-1); i++) {
+			ard_response = ard_response + (char)read_buf[i];
+	    	}
+
+		std::cout << ard_response << std::endl;
 	}
 
     	rclcpp::TimerBase::SharedPtr battery_timer_;
