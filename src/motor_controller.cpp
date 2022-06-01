@@ -7,9 +7,10 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "carl_interfaces/msg/arduino_command_a.hpp"
+#include "geometry_msgs/msg/twist.hpp"
 
 #define WHEEL_RADIUS 4.005
-#define WHEEL_BASE 160.0
+#define WHEEL_BASE 16.0
 #define DRIVE_RPM 12000
 #define TURN_RPM 7000
 

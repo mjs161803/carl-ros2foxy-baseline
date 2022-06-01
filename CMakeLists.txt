@@ -20,6 +20,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(carl_interfaces REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -29,7 +30,7 @@ add_executable(arduino_comm src/arduino_comm.cpp)
 ament_target_dependencies(arduino_comm rclcpp std_msgs carl_interfaces)
 
 add_executable(motor_controller src/motor_controller.cpp)
-ament_target_dependencies(motor_controller rclcpp std_msgs carl_interfaces)
+ament_target_dependencies(motor_controller rclcpp std_msgs carl_interfaces geometry_msgs)
 
 
 install(TARGETS 
