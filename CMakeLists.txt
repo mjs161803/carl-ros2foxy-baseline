@@ -32,10 +32,14 @@ ament_target_dependencies(arduino_comm rclcpp std_msgs carl_interfaces)
 add_executable(motor_controller src/motor_controller.cpp)
 ament_target_dependencies(motor_controller rclcpp std_msgs carl_interfaces geometry_msgs)
 
+add_executable(teleop_carl src/teleop_carl.cpp)
+ament_target_dependencies(teleop_carl rclcpp geometry_msgs)
+
 
 install(TARGETS 
   arduino_comm
   motor_controller
+  teleop_carl
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
