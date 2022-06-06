@@ -20,7 +20,8 @@ using std::placeholders::_1;
 class ArduinoCommunicator : public rclcpp::Node {
     public:
         ArduinoCommunicator() : Node("arduino_comm") {
-            battery_publisher_ = this->create_publisher<std_msgs::msg::String>("battery_voltages", 10);
+            battery1_publisher_ = this->create_publisher<std_msgs::msg::Float>("battery1_voltages", 10);
+            battery2_publisher_ = this->create_publisher<std_msgs::msg::Float>("battery2_voltages", 10);
             
 	    battery_timer_ = this->create_wall_timer(10s, std::bind(&ArduinoCommunicator::battery_timer_callback, this));
 	    
@@ -62,22 +63,31 @@ class ArduinoCommunicator : public rclcpp::Node {
 
     private:
 	int arduino {0}; // file handle for serial device
+	std::array<float, 2> parse_battery_message(const std::string);
 
         void battery_timer_callback() {
             unsigned char msg[] = {'C'};
 	    char read_buf [256];
+	    std::array<float, 2> battery_voltages;
 
 	    write(this->arduino, msg, sizeof(msg));
 	    int n = read(this->arduino, &read_buf, sizeof(read_buf));
-	    std::string voltages = "";
+	    std::string voltages_string = "";
 	    for (int i = 0; i < (n-1); i++) {
-		    voltages = voltages + read_buf[i];
+		    voltages_string = voltages_string + read_buf[i];
 	    }
 
-	    auto message = std_msgs::msg::String();
-	    message.data = voltages;
-            RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
-            battery_publisher_->publish(message);
+	    battery_voltates = this->parse_battery_message(voltages_string);
+
+	    auto v1_message = std_msgs::msg::Float();
+	    auto v2_message = std_msgs::msg::Float();
+	    v1_message.data = battery_voltages[0];
+	    v2_message.data = battery_voltages[1];
+
+
+            RCLCPP_INFO(this->get_logger(), "Publishing Computer Battery Voltage: %.2f, Motor Battery Voltage: %.2f", v1_message.data, v2_message.data);
+            battery1_publisher_->publish(v1_message);
+            battery2_publisher_->publish(v2_message);
         }
 
 	void rpm_comm_callback(const carl_interfaces::msg::ArduinoCommandA::SharedPtr msg) const {
@@ -139,7 +149,8 @@ class ArduinoCommunicator : public rclcpp::Node {
 	}
 
     	rclcpp::TimerBase::SharedPtr battery_timer_;
-    	rclcpp::Publisher<std_msgs::msg::String>::SharedPtr battery_publisher_;
+    	rclcpp::Publisher<std_msgs::msg::Float>::SharedPtr battery1_publisher_;
+    	rclcpp::Publisher<std_msgs::msg::Float>::SharedPtr battery2_publisher_;
 	rclcpp::Subscription<carl_interfaces::msg::ArduinoCommandA>::SharedPtr rpm_command_subscription_;
 	int serial_port;
 };
@@ -149,4 +160,15 @@ int main(int argc, char * argv[]) {
     rclcpp::spin(std::make_shared<ArduinoCommunicator>());
     rclcpp::shutdown();
     return 0;
+}
+
+std::array<float, 2> ArduinoCommunicator::parse_battery_message (const std::string ard_msg) {
+	std::array<float, 2> voltages_result;
+
+	size_t line_len = ard_msg.length();
+
+	voltages_result[0] = 10.999;
+	voltages_result[1] = 9.999;
+
+	return voltages_result;
 }
