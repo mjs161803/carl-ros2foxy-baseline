@@ -4,9 +4,11 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <array>
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/float32.hpp"
 #include "carl_interfaces/msg/arduino_command_a.hpp"
 
 #include <fcntl.h>
@@ -20,8 +22,8 @@ using std::placeholders::_1;
 class ArduinoCommunicator : public rclcpp::Node {
     public:
         ArduinoCommunicator() : Node("arduino_comm") {
-            battery1_publisher_ = this->create_publisher<std_msgs::msg::Float>("battery1_voltages", 10);
-            battery2_publisher_ = this->create_publisher<std_msgs::msg::Float>("battery2_voltages", 10);
+            battery1_publisher_ = this->create_publisher<std_msgs::msg::Float32>("battery1_voltages", 10);
+            battery2_publisher_ = this->create_publisher<std_msgs::msg::Float32>("battery2_voltages", 10);
             
 	    battery_timer_ = this->create_wall_timer(10s, std::bind(&ArduinoCommunicator::battery_timer_callback, this));
 	    
@@ -77,17 +79,19 @@ class ArduinoCommunicator : public rclcpp::Node {
 		    voltages_string = voltages_string + read_buf[i];
 	    }
 
-	    battery_voltates = this->parse_battery_message(voltages_string);
+	    if (voltages_string[0] == '2') {
+		    battery_voltages = this->parse_battery_message(voltages_string);
+		    auto v1_message = std_msgs::msg::Float32();
+		    auto v2_message = std_msgs::msg::Float32();
+		    v1_message.data = battery_voltages[0];
+		    v2_message.data = battery_voltages[1];
+		    RCLCPP_INFO(this->get_logger(), "Publishing Computer Battery Voltage: %.2f, Motor Battery Voltage: %.2f", v1_message.data, v2_message.data);
+		    battery1_publisher_->publish(v1_message);
+		    battery2_publisher_->publish(v2_message);
+	    } else {
+		    RCLCPP_INFO(this->get_logger(), "Error reading response from Arduino. Expected '2' but received: %s\n", voltages_string.c_str());
+	    }
 
-	    auto v1_message = std_msgs::msg::Float();
-	    auto v2_message = std_msgs::msg::Float();
-	    v1_message.data = battery_voltages[0];
-	    v2_message.data = battery_voltages[1];
-
-
-            RCLCPP_INFO(this->get_logger(), "Publishing Computer Battery Voltage: %.2f, Motor Battery Voltage: %.2f", v1_message.data, v2_message.data);
-            battery1_publisher_->publish(v1_message);
-            battery2_publisher_->publish(v2_message);
         }
 
 	void rpm_comm_callback(const carl_interfaces::msg::ArduinoCommandA::SharedPtr msg) const {
@@ -149,8 +153,8 @@ class ArduinoCommunicator : public rclcpp::Node {
 	}
 
     	rclcpp::TimerBase::SharedPtr battery_timer_;
-    	rclcpp::Publisher<std_msgs::msg::Float>::SharedPtr battery1_publisher_;
-    	rclcpp::Publisher<std_msgs::msg::Float>::SharedPtr battery2_publisher_;
+    	rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr battery1_publisher_;
+    	rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr battery2_publisher_;
 	rclcpp::Subscription<carl_interfaces::msg::ArduinoCommandA>::SharedPtr rpm_command_subscription_;
 	int serial_port;
 };
@@ -165,10 +169,17 @@ int main(int argc, char * argv[]) {
 std::array<float, 2> ArduinoCommunicator::parse_battery_message (const std::string ard_msg) {
 	std::array<float, 2> voltages_result;
 
-	size_t line_len = ard_msg.length();
+	std::string delim {" "};
 
-	voltages_result[0] = 10.999;
-	voltages_result[1] = 9.999;
+	int delim_pos = ard_msg.find(delim); // should always be = 1
+	std::string ard_msg_substr = ard_msg.substr((delim_pos+1));
+	delim_pos = ard_msg_substr.find(delim);
+	std::string v1_str = ard_msg_substr.substr(0, delim_pos);
+	std::string v2_str = ard_msg_substr.substr((delim_pos+1));
+
+
+	voltages_result[0] = std::stof(v1_str);
+	voltages_result[1] = std::stof(v2_str);
 
 	return voltages_result;
 }
