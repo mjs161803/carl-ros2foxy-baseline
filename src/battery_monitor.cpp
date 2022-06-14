@@ -12,10 +12,9 @@ using std::placeholders::_1;
 
 class BatteryMonitor : public rclcpp::Node {
 	public:
-		query_voltages_client_; 
 		BatteryMonitor() : Node("battery_monitor") {
-			query_timer_ = this->create_wall_timer(30s, std::bind(&BatteryMonitor::query_timer_callback, this));
-			batt_query_client_ = this->create_client<carl_interfaces::srv::QueryBattVoltages>("query_batt_voltages");
+			query_timer_ = this->create_wall_timer(30s, std::bind(&BatteryMonitor::query_timer_callback, this, _1));
+			batt_query_client_ = rclcpp::create_client<carl_interfaces::srv::QueryBattVoltages>("query_batt_voltages");
 			b1_sta_publisher_ = this->create_publisher<std_msgs::msg::Float32>("battery1_rem_sta", 1);
 			b1_lta_publisher_ = this->create_publisher<std_msgs::msg::Float32>("battery1_rem_lta", 1);
 			b2_lta_publisher_ = this->create_publisher<std_msgs::msg::Float32>("battery2_rem_lta", 1);
