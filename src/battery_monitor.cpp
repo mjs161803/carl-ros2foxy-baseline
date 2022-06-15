@@ -80,7 +80,7 @@ void BatteryMonitor::query_timer_callback() {
 	}
 
 	auto result = batt_query_client_->async_send_request(request);
-	if (this->spin_until_future_complete(this, result) == rclcpp::FutureReturnCode::SUCCESS) {
+	if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) == rclcpp::FutureReturnCode::SUCCESS) {
 		RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Battery 1 Voltage: %f. Battery 2 Voltage: %f", result.get()->b1_voltage, result.get()->b2_voltage);
 	} else {
 		RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service query_batt_voltages.");
