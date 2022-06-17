@@ -10,19 +10,19 @@ using namespace std::chrono_literals;
 using std::placeholders::_1;
 
 class BatteryCalculator {
-        public:
+    public:
 		BatteryCalculator() {
-			min_voltage = 9.6;
+			min_voltage = 9.0;
 			sta_duration = 600.0;
 			lta_duration = 6000.0;
 			calc_start_time = std::chrono::system_clock::now();
 		}
-                BatteryCalculator(const float min_v, const unsigned long sta_window, const unsigned long lta_window) {
-                        min_voltage = min_v;
-                        sta_duration = sta_window;
-                        lta_duration = lta_window;
-                        calc_start_time = std::chrono::system_clock::now();
-                }
+		BatteryCalculator(const float min_v, const unsigned long sta_window, const unsigned long lta_window) {
+        	min_voltage = min_v;
+            sta_duration = sta_window;
+            lta_duration = lta_window;
+            calc_start_time = std::chrono::system_clock::now();
+        }
 
                 unsigned long get_sta();
                 unsigned long get_lta();
