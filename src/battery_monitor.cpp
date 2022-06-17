@@ -12,7 +12,7 @@ using std::placeholders::_1;
 class BatteryCalculator {
     public:
 		BatteryCalculator() {
-			min_voltage = 9.0;
+			min_voltage = 9.6;
 			sta_duration = 600.0;
 			lta_duration = 6000.0;
 			calc_start_time = std::chrono::system_clock::now();
