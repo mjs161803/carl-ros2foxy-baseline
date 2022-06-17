@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <array>
+#include <iostream>
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -23,9 +24,17 @@ using std::placeholders::_2;
 
 class ArduinoCommunicator : public rclcpp::Node {
     public:
+	rclcpp::Service<carl_interfaces::srv::QueryBattVoltages>::SharedPtr batt_service_;
+
         ArduinoCommunicator() : Node("arduino_comm") {
 	    rpm_command_subscription_ = this->create_subscription<carl_interfaces::msg::ArduinoCommandA>("motor_commands", 10, std::bind(&ArduinoCommunicator::rpm_comm_callback, this, _1));
 	    batt_service_ = this->create_service<carl_interfaces::srv::QueryBattVoltages>("query_batt_voltages", std::bind(&ArduinoCommunicator::batt_query_callback, this, _1, _2));
+	    if (batt_service_ == nullptr) {
+		    RCLCPP_INFO(this->get_logger(), "Error creating Service.  create_service returned nullptr.");
+	    } else {
+		    RCLCPP_INFO(this->get_logger(), "Battery Service ready...");
+	    }
+
 	    this->arduino = open("/dev/ttyACM0", O_RDWR);
 	    if (serial_port < 0) {
 		    RCLCPP_INFO(this->get_logger(), "Unable to open /dev/ttyACM0.");
@@ -63,11 +72,9 @@ class ArduinoCommunicator : public rclcpp::Node {
     	rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr battery1_publisher_;
     	rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr battery2_publisher_;
 	rclcpp::Subscription<carl_interfaces::msg::ArduinoCommandA>::SharedPtr rpm_command_subscription_;
-	rclcpp::Service<carl_interfaces::srv::QueryBattVoltages>::SharedPtr batt_service_; 
-	void batt_query_callback (const std::shared_ptr<carl_interfaces::srv::QueryBattVoltages::Request> request,
-			std::shared_ptr<carl_interfaces::srv::QueryBattVoltages::Response> response);
 	int serial_port;
 	void rpm_comm_callback (const carl_interfaces::msg::ArduinoCommandA::SharedPtr) const;
+	void batt_query_callback (const std::shared_ptr<carl_interfaces::srv::QueryBattVoltages::Request> request, std::shared_ptr<carl_interfaces::srv::QueryBattVoltages::Response> response);
 };
 
 void ArduinoCommunicator::batt_query_callback (const std::shared_ptr<carl_interfaces::srv::QueryBattVoltages::Request> request, 
@@ -95,15 +102,6 @@ void ArduinoCommunicator::batt_query_callback (const std::shared_ptr<carl_interf
 	} else {
 		RCLCPP_INFO(this->get_logger(), "Error reading response from Arduino. Expected '2' but received: %s\n", voltages_string.c_str());
 	}
-}
-
-
-int main(int argc, char * argv[]) {
-    rclcpp::init(argc, argv);
-    std::shared_ptr<rclcpp::Node> ard_node = rclcpp::Node::make_shared("arduino_node");
-    rclcpp::spin(ard_node);
-    rclcpp::shutdown();
-    return 0;
 }
 
 std::array<float, 2> ArduinoCommunicator::parse_battery_message (const std::string ard_msg) {
@@ -173,3 +171,11 @@ void ArduinoCommunicator::rpm_comm_callback(const carl_interfaces::msg::ArduinoC
 	    	}
 		std::cout << ard_response << std::endl;
 	}
+
+int main(int argc, char * argv[]) {
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<ArduinoCommunicator>());
+    rclcpp::shutdown();
+    return 0;
+}
+

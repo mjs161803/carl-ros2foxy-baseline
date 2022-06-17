@@ -16,8 +16,8 @@ class BatteryCalculator {
 			min_voltage = 9.6;
 			sta_duration = 600.0;
 			lta_duration = 6000.0;
-			sta_remaining = NULL; 
-			lta_remainint = NULL;
+			sta_remaining = 0; 
+			lta_remaining = 0;
 			calc_start_time = std::chrono::system_clock::now();
 		}
 		BatteryCalculator(const float min_v, const unsigned long sta_window, const unsigned long lta_window) {
@@ -45,7 +45,7 @@ class BatteryCalculator {
 
 void BatteryCalculator::update_log(float voltage_measurement, std::chrono::time_point<std::chrono::system_clock> measurement_time) {
 	this->measurement_log.push_back(std::make_pair(voltage_measurement, measurement_time));
-	std::cout << "Updated measurement log with (" << voltage_measurement << ", " << measurement_time << ")" << std::endl; 
+	std::cout << "Updated measurement log with (" << voltage_measurement << ", )" << std::endl; 
 }
 
 class BatteryMonitor : public rclcpp::Node {
@@ -82,7 +82,7 @@ void BatteryMonitor::query_timer_callback() {
 	auto timestamp = std::chrono::system_clock::now();
 	
 	if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) == rclcpp::FutureReturnCode::SUCCESS) {
-		RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Battery 1 Voltage: %f. Battery 2 Voltage: %f. Timestamp: %lu", result.get()->b1_voltage, result.get()->b2_voltage), timestamp.count();
+		RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Battery 1 Voltage: %f. Battery 2 Voltage: %f.", result.get()->b1_voltage, result.get()->b2_voltage);
 	} else {
 		RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service query_batt_voltages.");
 	}
