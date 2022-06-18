@@ -78,29 +78,29 @@ void BatteryMonitor::query_timer_callback() {
 		RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Service not available, waiting for 1 more second...");
 	}
 
-	auto result = batt_query_client_->async_send_request(request);
-	auto timestamp = std::chrono::system_clock::now();
-	
-	if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) == rclcpp::FutureReturnCode::SUCCESS) {
+	using ServiceResponseFuture = rclcpp::Client<carl_interfaces::srv::QueryBattVoltages>::SharedFuture;
+	auto response_received_callback = [this](ServiceResponseFuture future) {
+		auto result = future.get();
+		auto timestamp = std::chrono::system_clock::now();
 		RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Battery 1 Voltage: %f. Battery 2 Voltage: %f.", result.get()->b1_voltage, result.get()->b2_voltage);
-	} else {
-		RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service query_batt_voltages.");
-	}
+		bc1_rpi.update_log(result.get()->b1_voltage, timestamp);
+		bc2_motor.update_log(result.get()->b2_voltage, timestamp);
+		std_msgs::msg::Float32 b1_rem_sta;
+		std_msgs::msg::Float32 b1_rem_lta;
+		std_msgs::msg::Float32 b2_rem_sta;
+		std_msgs::msg::Float32 b2_rem_lta;
+		b1_rem_sta.data = result.get()->b1_voltage; //bc1_rpi.calc_sta();
+		b1_rem_lta.data = (result.get()->b1_voltage) * 10.0; //bc1_rpi.calc_lta();
+		b2_rem_sta.data = result.get()->b2_voltage; //bc2_motor.calc_sta();
+		b2_rem_lta.data = (result.get()->b2_voltage) * 10.0; //bc2_motor.calc_lta();
+		b1_sta_publisher_->publish(b1_rem_sta);
+		b1_lta_publisher_->publish(b1_rem_lta);
+		b2_sta_publisher_->publish(b2_rem_sta);
+		b2_lta_publisher_->publish(b2_rem_lta);
+	};
+
+	auto future_result = batt_query_client_->async_send_request(request, response_received_callback);
 		
-	bc1_rpi.update_log(result.get()->b1_voltage, timestamp);
-	bc2_motor.update_log(result.get()->b2_voltage, timestamp);
-	std_msgs::msg::Float32 b1_rem_sta;
-	std_msgs::msg::Float32 b1_rem_lta;
-	std_msgs::msg::Float32 b2_rem_sta;
-	std_msgs::msg::Float32 b2_rem_lta;
-	b1_rem_sta.data = result.get()->b1_voltage; //bc1_rpi.calc_sta();
-	b1_rem_lta.data = (result.get()->b1_voltage) * 10.0; //bc1_rpi.calc_lta();
-	b2_rem_sta.data = result.get()->b2_voltage; //bc2_motor.calc_sta();
-	b2_rem_lta.data = (result.get()->b2_voltage) * 10.0; //bc2_motor.calc_lta();
-	b1_sta_publisher_->publish(b1_rem_sta);
-	b1_lta_publisher_->publish(b1_rem_lta);
-	b2_sta_publisher_->publish(b2_rem_sta);
-	b2_lta_publisher_->publish(b2_rem_lta);
 }
 
 int main(int argc, char* argv[]) {
