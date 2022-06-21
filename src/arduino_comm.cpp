@@ -90,6 +90,11 @@ void ArduinoCommunicator::batt_query_callback (const std::shared_ptr<carl_interf
 	}
 	if (voltages_string[0] == '2') {
 		battery_voltages = this->parse_battery_message(voltages_string);
+		if ((battery_voltages[0] == -1.0) | (battery_voltages[1] == -1.0)) {
+			RCLCPP_ERROR(this->get_logger(), "Error parsing serial response to battery query.");
+			return;
+		}
+
 		auto v1_message = std_msgs::msg::Float32();
 		auto v2_message = std_msgs::msg::Float32();
 		v1_message.data = battery_voltages[0];
@@ -110,10 +115,29 @@ std::array<float, 2> ArduinoCommunicator::parse_battery_message (const std::stri
 	std::string delim {" "};
 
 	int delim_pos = ard_msg.find(delim); // should always be = 1
+	if (delim_pos != 1) {
+		std::cout << "parse_battery_message: error parsing serial response. Delimiter not found at position 1." << std::endl;
+		voltages_result[0] = -1.0;
+		voltages_result[1] = -1.0;
+		return voltages_result;
+	}
+		
 	std::string ard_msg_substr = ard_msg.substr((delim_pos+1));
 	delim_pos = ard_msg_substr.find(delim);
 	std::string v1_str = ard_msg_substr.substr(0, delim_pos);
+	if (v1_str.size() <= 2) {
+		std::cout << "parse_battery_message: error parsing serial response. Battery1 voltage not properly formatted." << std::endl;
+		voltages_result[0] = -1.0;
+		voltages_result[1] = -1.0;
+		return voltages_result;
+	}
 	std::string v2_str = ard_msg_substr.substr((delim_pos+1));
+	if (v2_str.size() <= 2) {
+		std::cout << "parse_battery_message: error parsing serial response. Battery2 voltage not properly formatted." << std::endl;
+		voltages_result[0] = -1.0;
+		voltages_result[1] = -1.0;
+		return voltages_result;
+	}
 
 
 	voltages_result[0] = std::stof(v1_str);

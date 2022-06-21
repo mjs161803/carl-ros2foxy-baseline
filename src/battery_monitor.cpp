@@ -43,15 +43,15 @@ class BatteryCalculator {
         unsigned long calc_lta();
 };
 
-void BatteryCalculator::update_log(float voltage_measurement, std::chrono::time_point<std::chrono::system_clock> measurement_time) {
+void BatteryCalculator::update_log(const float voltage_measurement, const std::chrono::time_point<std::chrono::system_clock> measurement_time) {
 	this->measurement_log.push_back(std::make_pair(voltage_measurement, measurement_time));
-	std::cout << "Updated measurement log with (" << voltage_measurement << ", )" << std::endl; 
+	std::cout << "Updated measurement log with (" << voltage_measurement << ", [timestamp]). # Measurements in Log: " << this->measurement_log.size() << std::endl; 
 }
 
 class BatteryMonitor : public rclcpp::Node {
 	public:
 		BatteryMonitor() : Node("battery_monitor") {
-			query_timer_ = this->create_wall_timer(30s, std::bind(&BatteryMonitor::query_timer_callback, this));
+			query_timer_ = this->create_wall_timer(10s, std::bind(&BatteryMonitor::query_timer_callback, this));
 			batt_query_client_ = this->create_client<carl_interfaces::srv::QueryBattVoltages>("query_batt_voltages");
 			b1_sta_publisher_ = this->create_publisher<std_msgs::msg::Float32>("battery1_rem_sta", 1);
 			b1_lta_publisher_ = this->create_publisher<std_msgs::msg::Float32>("battery1_rem_lta", 1);
@@ -85,21 +85,22 @@ void BatteryMonitor::query_timer_callback() {
 		RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Battery 1 Voltage: %f. Battery 2 Voltage: %f.", result.get()->b1_voltage, result.get()->b2_voltage);
 		bc1_rpi.update_log(result.get()->b1_voltage, timestamp);
 		bc2_motor.update_log(result.get()->b2_voltage, timestamp);
-		std_msgs::msg::Float32 b1_rem_sta;
-		std_msgs::msg::Float32 b1_rem_lta;
-		std_msgs::msg::Float32 b2_rem_sta;
-		std_msgs::msg::Float32 b2_rem_lta;
-		b1_rem_sta.data = result.get()->b1_voltage; //bc1_rpi.calc_sta();
-		b1_rem_lta.data = (result.get()->b1_voltage) * 10.0; //bc1_rpi.calc_lta();
-		b2_rem_sta.data = result.get()->b2_voltage; //bc2_motor.calc_sta();
-		b2_rem_lta.data = (result.get()->b2_voltage) * 10.0; //bc2_motor.calc_lta();
-		b1_sta_publisher_->publish(b1_rem_sta);
-		b1_lta_publisher_->publish(b1_rem_lta);
-		b2_sta_publisher_->publish(b2_rem_sta);
-		b2_lta_publisher_->publish(b2_rem_lta);
 	};
 
 	auto future_result = batt_query_client_->async_send_request(request, response_received_callback);
+	
+	std_msgs::msg::Float32 b1_rem_sta;
+	//std_msgs::msg::Float32 b1_rem_lta;
+	//std_msgs::msg::Float32 b2_rem_sta;
+	//std_msgs::msg::Float32 b2_rem_lta;
+	b1_rem_sta.data = 10000.0; //bc1_rpi.calc_sta();
+	//b1_rem_lta.data = 20000.0; //bc1_rpi.calc_lta();
+	//b2_rem_sta.data = 30000.0; //bc2_motor.calc_sta();
+	//b2_rem_lta.data = 40000.0; //bc2_motor.calc_lta();
+	b1_sta_publisher_->publish(b1_rem_sta);
+	//b1_lta_publisher_->publish(b1_rem_lta);
+	//b2_sta_publisher_->publish(b2_rem_sta);
+	//b2_lta_publisher_->publish(b2_rem_lta);
 		
 }
 
