@@ -35,11 +35,15 @@ ament_target_dependencies(motor_controller rclcpp std_msgs carl_interfaces geome
 add_executable(teleop_carl src/teleop_carl.cpp)
 ament_target_dependencies(teleop_carl rclcpp geometry_msgs)
 
+add_executable(battery_monitor src/battery_monitor.cpp)
+ament_target_dependencies(battery_monitor rclcpp std_msgs carl_interfaces)
+
 
 install(TARGETS 
   arduino_comm
   motor_controller
   teleop_carl
+  battery_monitor
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
