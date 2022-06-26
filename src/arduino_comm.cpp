@@ -30,18 +30,18 @@ class ArduinoCommunicator : public rclcpp::Node {
 	    rpm_command_subscription_ = this->create_subscription<carl_interfaces::msg::ArduinoCommandA>("motor_commands", 10, std::bind(&ArduinoCommunicator::rpm_comm_callback, this, _1));
 	    batt_service_ = this->create_service<carl_interfaces::srv::QueryBattVoltages>("query_batt_voltages", std::bind(&ArduinoCommunicator::batt_query_callback, this, _1, _2));
 	    if (batt_service_ == nullptr) {
-		    RCLCPP_INFO(this->get_logger(), "Error creating Service.  create_service returned nullptr.");
+		    RCLCPP_ERROR(this->get_logger(), "Error creating Service.  create_service returned nullptr.");
 	    } else {
 		    RCLCPP_INFO(this->get_logger(), "Battery Service ready...");
 	    }
 
 	    this->arduino = open("/dev/ttyACM0", O_RDWR);
-	    if (serial_port < 0) {
-		    RCLCPP_INFO(this->get_logger(), "Unable to open /dev/ttyACM0.");
+	    if (this->arduino < 0) {
+		    RCLCPP_ERROR(this->get_logger(), "Unable to open /dev/ttyACM0.");
 	    }
 	    struct termios arduino_term;
 	    if(tcgetattr(arduino, &arduino_term) != 0) {
-		    printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
+		    RCLCPP_ERROR(this->get_logger(), "Error %i from tcgetattr: %s\n", errno, strerror(errno));
 	    }
 	    arduino_term.c_cflag &= ~PARENB;
 	    arduino_term.c_cflag &= ~CSTOPB;
@@ -62,17 +62,13 @@ class ArduinoCommunicator : public rclcpp::Node {
 	    arduino_term.c_cc[VMIN] = 0;
 	    cfsetspeed(&arduino_term, B115200);
 	    if (tcsetattr(arduino, TCSANOW, &arduino_term) != 0) {
-		    printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
+		    RCLCPP_ERROR(this->get_logger(), "Error %i from tcsetattr: %s\n", errno, strerror(errno));
 	    }
         }
     private:
 	int arduino {0}; // file handle for serial device
 	std::array<float, 2> parse_battery_message(const std::string);
-    	rclcpp::TimerBase::SharedPtr battery_timer_;
-    	rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr battery1_publisher_;
-    	rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr battery2_publisher_;
 	rclcpp::Subscription<carl_interfaces::msg::ArduinoCommandA>::SharedPtr rpm_command_subscription_;
-	int serial_port;
 	void rpm_comm_callback (const carl_interfaces::msg::ArduinoCommandA::SharedPtr) const;
 	void batt_query_callback (const std::shared_ptr<carl_interfaces::srv::QueryBattVoltages::Request> request, std::shared_ptr<carl_interfaces::srv::QueryBattVoltages::Response> response);
 };
